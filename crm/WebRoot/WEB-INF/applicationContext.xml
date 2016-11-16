@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+				http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+				http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd">
+
+    <!-- 数据源  sessionFactory  hibernateTemplate dictionaryTypeDAO注入到里面-->
+    <!-- 数据源 -->
+	<bean id="dataSource" 
+       	  class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" ><value>com.mysql.jdbc.Driver</value> </property>
+		<property name="url"><value>jdbc:mysql://localhost:3306/crm?useUnicode=true&amp;characterEncoding=utf8</value>   </property>
+		<property name="username"><value>root</value></property>
+		<property name="password"><value></value> </property>
+		
+	</bean>
+
+	<!-- 定义sessionFactory -->
+	<!-- 把数据源dataSource 对象注入到 sessionFactory的dataSource 的属性当中-->
+	  <bean id="sessionFactory" class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+	  	<property name="dataSource"><ref bean="dataSource" /></property>
+		<property name="hibernateProperties">
+				<props>
+					<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect</prop>
+					<prop key="hibernate.show_sql">true</prop>
+  				    <prop key="hibernate.format_sql">false</prop>
+				</props>
+			</property>
+			<property name="mappingResources">
+				<list>
+					<value>com/crm/po/Sjzdfl.hbm.xml</value>
+					<value>com/crm/po/Sjzdxx.hbm.xml</value>
+				</list>
+			</property>    
+    </bean>
+    <!-- 定义hibernateTemplate -->
+	<!-- 通过设置HibernateTemplate的flushMode=FLUSH_NEVER来通知spring不进行session.flush（）的调用，则spring的flushIfNecessary（）将不进行任何操作 -->
+	<bean class="org.springframework.orm.hibernate3.HibernateTemplate" id="hibernateTemplate">
+		<property name="sessionFactory">
+			<ref bean="sessionFactory"/>	
+		</property>
+	</bean>
+	<!-- =====================数据字典类别====================================== -->
+	<!-- 定义sjzdflDAO -->
+	<bean id="sjzdflDAO" class="com.crm.dao.SjzdflDAOImpl">
+			<property name="hibernateTemplate">
+			     <ref bean="hibernateTemplate"/>
+	        </property>
+	</bean>
+	<!-- 定义sjzdxxlDAO -->
+	<bean id="sjzdxxDAO" class="com.crm.dao.SjzdxxDAO">
+			<property name="hibernateTemplate">
+			     <ref bean="hibernateTemplate"/>
+	        </property>
+	</bean>
+	<!-- hibernate事物处理-->
+	<bean id="transactionManager" 
+          class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+          <property name="sessionFactory" ref="sessionFactory"></property>
+    </bean>
+    <!-- 代理类 -->
+    <bean id="sjzdflDAOProxy" 
+          class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+		<property name="transactionManager">     <!-- 代理的管理器 -->
+		     <ref bean="transactionManager"/>
+		</property>
+		<property name="target">                 <!-- 代理的目标 -->
+		     <ref bean="sjzdflDAO"/>
+		</property>
+		
+	    <property name="transactionAttributes"> <!-- 代理的属性 -->
+			<props>
+		          <prop key="*">PROPAGATION_REQUIRED, -Exception</prop><!-- 这里的方法签名可以精确到方法全配置上 -->
+			</props>	
+	    </property>
+	</bean>
+	<!-- 定义sjzdService -->
+	<bean id="sjzdflService" class="com.crm.service.SjzdflServiceImpl">
+			<property name="sjzdflDAO">
+			     <ref bean="sjzdflDAOProxy"/>
+	        </property>
+	</bean>
+	<!-- 定义getSjzdflAction -->
+	<bean id="getSjzdflAction" class="com.crm.action.GetSjzdflAction">
+			<property name="sjzdflService">
+			     <ref bean="sjzdflService"/>
+	        </property>
+	</bean>
+	<!-- 定义updateSjzdflAction -->
+	<bean id="UpdateSjzdflAction" class="com.crm.action.UpdateSjzdflAction">
+			<property name="sjzdflService">
+			     <ref bean="sjzdflService"/>
+	        </property>
+	</bean>
+	
+
+    
+
+  
+  
+	
+	
+	
+</beans>
+
